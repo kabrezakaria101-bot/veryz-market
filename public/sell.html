@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vendre — VERYZ MARKET</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="app-header"></div>
+  <main><div class="container">
+    <h2>Publier une annonce</h2>
+    <form id="sell-form" class="panel narrow">
+      <label>Titre</label><input name="title" maxlength="100" required placeholder="Ex : Téléphone Samsung A15">
+      <label>Catégorie</label><select name="category_id" required></select>
+      <label>Prix (FCFA)</label><input name="price_fcfa" type="number" min="0" step="1" inputmode="numeric" required>
+      <label>Ville</label><input name="city" required placeholder="Ouagadougou">
+      <label>Quartier</label><input name="neighborhood" placeholder="Ex : Ouaga 2000">
+      <label>Description</label><textarea name="description" maxlength="2000"></textarea>
+      <label>Photo</label><input name="photo" type="file" accept="image/*">
+      <img id="preview" class="preview hidden" alt="">
+      <p class="meta">Ton annonce sera vérifiée par un administrateur avant d&apos;apparaître sur le site.</p>
+      <button class="btn orange" type="submit" style="width:100%">Publier</button>
+    </form>
+  </div></main>
+  <div id="app-footer"></div>
+  <script src="/js/ui.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/sell.js"></script>
+</body>
+</html>
