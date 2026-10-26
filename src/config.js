@@ -4,7 +4,8 @@ const path = require('path');
 const crypto = require('crypto');
 
 const rootDir = path.resolve(__dirname, '..');
-const dataDir = path.join(rootDir, 'data');
+// En ligne : mets DATA_DIR sur un disque qui ne s'efface pas (base, photos, vocaux, clé secrète y sont rangés)
+const dataDir = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(rootDir, 'data');
 const uploadsDir = path.join(dataDir, 'uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
 
