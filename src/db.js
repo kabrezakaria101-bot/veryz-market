@@ -1,4 +1,6 @@
 const { Pool } = require('pg');
+const bcrypt = require('bcryptjs');
+require('dotenv').config();
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -6,11 +8,12 @@ const pool = new Pool({
 });
 
 async function initDb() {
+  // 1. Création des tables (même structure que ton ancien SQLite mais en Postgres)
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       full_name TEXT NOT NULL,
-      phone TEXT NOT NULL UNIQUE,
+      phone TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT NOT NULL DEFAULT 'buyer' CHECK (role IN ('buyer', 'seller', 'admin')),
       country TEXT NOT NULL DEFAULT 'BF',
@@ -20,8 +23,8 @@ async function initDb() {
 
     CREATE TABLE IF NOT EXISTS categories (
       id SERIAL PRIMARY KEY,
-      name TEXT NOT NULL UNIQUE,
-      slug TEXT NOT NULL UNIQUE
+      name TEXT UNIQUE NOT NULL,
+      slug TEXT UNIQUE NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS products (
@@ -37,13 +40,14 @@ async function initDb() {
       status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'published', 'rejected', 'sold')),
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
     CREATE INDEX IF NOT EXISTS idx_products_status_city ON products(status, city);
     CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id);
     CREATE INDEX IF NOT EXISTS idx_products_seller ON products(seller_id);
 
     CREATE TABLE IF NOT EXISTS transactions (
       id SERIAL PRIMARY KEY,
-      reference TEXT NOT NULL UNIQUE,
+      reference TEXT UNIQUE NOT NULL,
       product_id INTEGER NOT NULL REFERENCES products(id),
       buyer_id INTEGER NOT NULL REFERENCES users(id),
       seller_id INTEGER NOT NULL REFERENCES users(id),
@@ -54,21 +58,11 @@ async function initDb() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       paid_at TIMESTAMPTZ
     );
-    CREATE INDEX IF NOT EXISTS idx_transactions_buyer ON transactions(buyer_id);
 
-    CREATE TABLE IF NOT EXISTS messages (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL REFERENCES users(id),
-      sender_role TEXT NOT NULL CHECK (sender_role IN ('user', 'admin')),
-      body TEXT NOT NULL,
-      is_read INTEGER NOT NULL DEFAULT 0,
-      kind TEXT NOT NULL DEFAULT 'text',
-      media_url TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-    CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(user_id);
+    CREATE INDEX IF NOT EXISTS idx_transactions_buyer ON transactions(buyer_id);
   `);
 
+  // 2. Seed catégories (comme ton ancien seed)
   const categories = [
     ['Téléphones et informatique', 'telephones-informatique'],
     ['Vêtements et chaussures', 'vetements-chaussures'],
@@ -81,18 +75,32 @@ async function initDb() {
 
   for (const [name, slug] of categories) {
     await pool.query(
-      `INSERT INTO categories (name, slug) VALUES ($1, $2) ON CONFLICT (slug) DO NOTHING`,
+      'INSERT INTO categories (name, slug) VALUES ($1, $2) ON CONFLICT (slug) DO NOTHING',
       [name, slug]
     );
   }
+
+  // 3. Seed ADMIN 77656484 / Veryz199@ (depuis .env sur Render)
+  const adminPhone = process.env.ADMIN_PHONE || '77656484';
+  const adminPass = process.env.ADMIN_PASSWORD || 'Veryz199@';
+
+  const { rows } = await pool.query('SELECT id FROM users WHERE phone = $1', [adminPhone]);
+  if (rows.length === 0) {
+    const hash = await bcrypt.hash(adminPass, 10);
+    await pool.query(
+      `INSERT INTO users (full_name, phone, password_hash, role, city) VALUES ($1, $2, $3, 'admin', 'Ouagadougou')`,
+      ['Admin VERYZ', adminPhone, hash]
+    );
+    console.log('✅ Admin créé:', adminPhone);
+  }
+
   console.log('Base Postgres initialisée.');
 }
 
-initDb().catch(err => {
-  console.error('Erreur init Postgres:', err);
-});
+initDb().catch(e => console.error('Erreur DB:', e.message));
 
-// Compatibilité pour que ton ancien code qui fait db.prepare ne plante pas tout de suite
-// On va devoir convertir tes routes une par une après
-module.exports = pool;
-module.exports.query = (text, params) => pool.query(text, params);
+// Pour que tes anciennes routes qui font db.query marchent
+module.exports = {
+  query: (text, params) => pool.query(text, params),
+  pool
+};
