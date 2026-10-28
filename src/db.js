@@ -36,6 +36,15 @@ async function transaction(fn) {
 }
 
 const SCHEMA = `
+CREATE TABLE IF NOT EXISTS ads (
+  id SERIAL PRIMARY KEY,
+  image_url TEXT NOT NULL,
+  link_url TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  position INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
   CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     full_name TEXT NOT NULL,
