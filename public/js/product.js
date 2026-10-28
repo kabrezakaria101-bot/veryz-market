@@ -54,31 +54,81 @@
       } catch (e) { toast(e.message, true); go.disabled = false; }
     };
   }
-// Galerie : grande photo + petites photos cliquables
-  const images = (p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []);
-  const main = images.length ? h('img', { src: images[0], alt: p.title }) : h('div', { class: 'noimg' }, 'Pas de photo');
-  const thumbs = images.length > 1 ? h('div', { class: 'thumbs' }, images.map((url, i) => h('img', {
-    src: url, alt: 'Photo ' + (i + 1), class: i === 0 ? 'on' : '',
-    onclick: (e) => {
-      main.src = url;
-      thumbs.querySelectorAll('img').forEach((t) => t.classList.remove('on'));
-      e.target.classList.add('on');
-    }
-  }))) : null;
+  // Galerie : grande photo + petites photos cliquables
+  const images = (Array.isArray(p.images) && p.images.length)
+    ? p.images
+    : (p.image_url ? [p.image_url] : []);
 
-  root.replaceChildrenh(
-    'div', { class: 'detail' },
-    h('div', {}, h('div', { class: 'photo' }, main), thumbs),
+  const main = images.length
+    ? h('img', {
+        src: images[0],
+        alt: p.title,
+        class: 'main-photo',
+        onclick: () => {
+          if (window.VM && typeof VM.openLightbox === 'function') {
+            VM.openLightbox(images, 0);
+          }
+        }
+      })
+    : h('div', { class: 'noimg' }, 'Pas de photo');
 
-  root.replaceChildren(
-      h('div', { class: 'panel' },
-      h('p', {}, badge(p.status), ' ', h('span', { class: 'meta' }, p.category_name || '')),
+  let thumbs = null;
+
+  if (images.length > 1) {
+    thumbs = h(
+      'div',
+      { class: 'thumbs' },
+      images.map((url, i) =>
+        h('img', {
+          src: url,
+          alt: 'Photo ' + (i + 1),
+          class: i === 0 ? 'on' : '',
+          loading: 'lazy',
+          onclick: (e) => {
+            main.src = url;
+            thumbs.querySelectorAll('img').forEach((t) =>
+              t.classList.remove('on')
+            );
+            e.currentTarget.classList.add('on');
+          }
+        })
+      )
+    );
+  }
+
+  const gallery = h(
+    'div',
+    { class: 'product-gallery' },
+    h('div', { class: 'photo' }, main),
+    ...(thumbs ? [thumbs] : [])
+  );
+
+  const detail = h(
+    'div',
+    { class: 'detail' },
+    gallery,
+    h(
+      'div',
+      { class: 'panel' },
+      h('p', {},
+        badge(p.status),
+        ' ',
+        h('span', { class: 'meta' }, p.category_name || '')
+      ),
       h('h1', { style: 'margin:6px 0' }, p.title),
       h('div', { class: 'price', style: 'font-size:1.6rem' }, fcfa(p.price_fcfa)),
-      h('p', { class: 'meta' }, '📍 ' + [p.city, p.neighborhood].filter(Boolean).join(' · ') + ' — publiée le ' + date(p.created_at)),
+      h('p', { class: 'meta' },
+        'Lieu : ',
+        [p.city, p.neighborhood].filter(Boolean).join(' · '),
+        ' — publiée le ',
+        date(p.created_at)
+      ),
       h('p', { class: 'desc' }, p.description || 'Pas de description.'),
       h('p', {}, 'Vendeur : ', h('b', {}, p.seller_name)),
       actions
     )
-  ));
+  );
+
+  root.replaceChildren(detail);
 })();
+

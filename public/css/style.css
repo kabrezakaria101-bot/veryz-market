@@ -182,3 +182,38 @@ th { background: #eef3ef; }
 .lb-next { right: 0; border-radius: 10px 0 0 10px; }
 .lightbox.single .lb-nav { display: none; }
 .lb-count { position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; color: #fff; font-size: .95rem; }
+.product-gallery {
+  min-width: 0;
+}
+
+.product-gallery .photo {
+  width: 100%;
+}
+
+.product-gallery .main-photo {
+  display: block;
+  width: 100%;
+  max-height: 520px;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
+.thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.thumbs img {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.thumbs img.on {
+  border-color: #e99a70;
+}
