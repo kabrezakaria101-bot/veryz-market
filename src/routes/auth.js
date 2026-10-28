@@ -35,21 +35,27 @@ router.post('/register', limiter, async (req, res) => {
   if (typeof password !== 'string' || password.length < 6 || password.length > 100) {
     return res.status(400).json({ success: false, message: 'Mot de passe : 6 caractères minimum.' });
   }
-  if (db.prepare('SELECT id FROM users WHERE phone = ?').get(num)) {
+  if (await db.one('SELECT id FROM users WHERE phone = $1', [num])) {
     return res.status(409).json({ success: false, message: 'Ce numéro a déjà un compte.' });
   }
-  const info = db.prepare(
-    "INSERT INTO users (full_name, phone, password_hash, role, city) VALUES (?, ?, ?, 'buyer', ?)"
-  ).run(name, num, await hashPassword(password), String(city || '').trim().slice(0, 60) || null);
-  setSession(res, info.lastInsertRowid);
-  const user = db.prepare('SELECT id, full_name, phone, role, city FROM users WHERE id = ?').get(info.lastInsertRowid);
+  let user;
+  try {
+    user = await db.one(
+      "INSERT INTO users (full_name, phone, password_hash, role, city) VALUES ($1, $2, $3, 'buyer', $4) RETURNING id, full_name, phone, role, city",
+      [name, num, await hashPassword(password), String(city || '').trim().slice(0, 60) || null]
+    );
+  } catch (error) {
+    if (error.code === '23505') return res.status(409).json({ success: false, message: 'Ce numéro a déjà un compte.' });
+    throw error;
+  }
+  setSession(res, user.id);
   res.status(201).json({ success: true, user: publicUser(user) });
 });
 
 router.post('/login', limiter, async (req, res) => {
   const { phone, password } = req.body || {};
   const num = normalizePhone(phone);
-  const row = num ? db.prepare('SELECT * FROM users WHERE phone = ?').get(num) : null;
+  const row = num ? await db.one('SELECT * FROM users WHERE phone = $1', [num]) : null;
   const ok = row && typeof password === 'string' && await verifyPassword(password, row.password_hash);
   if (!ok) return res.status(401).json({ success: false, message: 'Numéro ou mot de passe incorrect.' });
   setSession(res, row.id);

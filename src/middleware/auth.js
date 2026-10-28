@@ -12,13 +12,15 @@ function readCookie(req, name) {
 }
 
 // Ajoute req.user si la personne est connectée
-function attachUser(req, res, next) {
+async function attachUser(req, res, next) {
   req.user = null;
   const data = readToken(readCookie(req, config.cookieName));
   if (data) {
-    req.user = db.prepare(
-      'SELECT id, full_name, phone, role, city FROM users WHERE id = ?'
-    ).get(data.uid) || null;
+    try {
+      req.user = await db.one('SELECT id, full_name, phone, role, city FROM users WHERE id = $1', [data.uid]);
+    } catch (error) {
+      return next(error);
+    }
   }
   next();
 }

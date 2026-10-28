@@ -54,10 +54,24 @@
       } catch (e) { toast(e.message, true); go.disabled = false; }
     };
   }
+// Galerie : grande photo + petites photos cliquables
+  const images = (p.images && p.images.length) ? p.images : (p.image_url ? [p.image_url] : []);
+  const main = images.length ? h('img', { src: images[0], alt: p.title }) : h('div', { class: 'noimg' }, 'Pas de photo');
+  const thumbs = images.length > 1 ? h('div', { class: 'thumbs' }, images.map((url, i) => h('img', {
+    src: url, alt: 'Photo ' + (i + 1), class: i === 0 ? 'on' : '',
+    onclick: (e) => {
+      main.src = url;
+      thumbs.querySelectorAll('img').forEach((t) => t.classList.remove('on'));
+      e.target.classList.add('on');
+    }
+  }))) : null;
 
-  root.replaceChildren(h('div', { class: 'detail' },
-    h('div', { class: 'photo' }, p.image_url ? h('img', { src: p.image_url, alt: p.title }) : h('div', { class: 'noimg' }, 'Pas de photo')),
-    h('div', { class: 'panel' },
+  root.replaceChildrenh(
+    'div', { class: 'detail' },
+    h('div', {}, h('div', { class: 'photo' }, main), thumbs),
+
+  root.replaceChildren(
+      h('div', { class: 'panel' },
       h('p', {}, badge(p.status), ' ', h('span', { class: 'meta' }, p.category_name || '')),
       h('h1', { style: 'margin:6px 0' }, p.title),
       h('div', { class: 'price', style: 'font-size:1.6rem' }, fcfa(p.price_fcfa)),

@@ -18,7 +18,7 @@ const sendLimiter = rateLimit({
 });
 
 // Vérifie le message reçu (texte, sticker, photo ou vocal)
-function readMessage(req) {
+async function readMessage(req) {
   const { kind = 'text', body, media } = req.body || {};
   const text = String(body || '').trim();
 
@@ -31,8 +31,8 @@ function readMessage(req) {
     return { kind, text, mediaUrl: null };
   }
   try {
-    if (kind === 'image') return { kind, text: text.slice(0, 300), mediaUrl: saveImage(media) };
-    if (kind === 'audio') return { kind, text: '', mediaUrl: saveAudio(media) };
+    if (kind === 'image') return { kind, text: text.slice(0, 300), mediaUrl: await saveImage(media) };
+    if (kind === 'audio') return { kind, text: '', mediaUrl: await saveAudio(media) };
   } catch (e) {
     return { error: e.message };
   }
@@ -41,65 +41,66 @@ function readMessage(req) {
 
 const SELECT_THREAD = `
   SELECT id, sender_role, kind, body, media_url, created_at
-  FROM messages WHERE user_id = ? ORDER BY id ASC LIMIT 200
+  FROM messages WHERE user_id = $1 ORDER BY id ASC LIMIT 200
 `;
 
-const insert = db.prepare(
-  'INSERT INTO messages (user_id, sender_role, kind, body, media_url) VALUES (?, ?, ?, ?, ?)'
-);
+const INSERT = 'INSERT INTO messages (user_id, sender_role, kind, body, media_url) VALUES ($1, $2, $3, $4, $5)';
 
 // Nombre de messages non lus (pastille du bouton)
-router.get('/unread', requireAuth, (req, res) => {
+router.get('/unread', requireAuth, async (req, res) => {
   const row = req.user.role === 'admin'
-    ? db.prepare("SELECT COUNT(*) AS n FROM messages WHERE sender_role = 'user' AND is_read = 0").get()
-    : db.prepare("SELECT COUNT(*) AS n FROM messages WHERE user_id = ? AND sender_role = 'admin' AND is_read = 0").get(req.user.id);
+    ? await db.one("SELECT COUNT(*)::int AS n FROM messages WHERE sender_role = 'user' AND is_read = 0")
+    : await db.one("SELECT COUNT(*)::int AS n FROM messages WHERE user_id = $1 AND sender_role = 'admin' AND is_read = 0", [req.user.id]);
   res.json({ success: true, unread: row.n });
 });
 
 // ----- Côté administrateur -----
-router.get('/admin/threads', requireRole('admin'), (req, res) => {
-  const items = db.prepare(`
+router.get('/admin/threads', requireRole('admin'), async (req, res) => {
+  const items = await db.all(`
     SELECT u.id AS user_id, u.full_name, u.phone,
       (SELECT CASE m.kind WHEN 'image' THEN '📷 Photo' WHEN 'audio' THEN '🎤 Message vocal' ELSE m.body END
          FROM messages m WHERE m.user_id = u.id ORDER BY m.id DESC LIMIT 1) AS last_body,
       (SELECT created_at FROM messages m WHERE m.user_id = u.id ORDER BY m.id DESC LIMIT 1) AS last_at,
-      (SELECT COUNT(*) FROM messages m WHERE m.user_id = u.id AND m.sender_role = 'user' AND m.is_read = 0) AS unread
+      (SELECT COUNT(*)::int FROM messages m WHERE m.user_id = u.id AND m.sender_role = 'user' AND m.is_read = 0) AS unread
     FROM users u
     WHERE EXISTS (SELECT 1 FROM messages m WHERE m.user_id = u.id)
     ORDER BY last_at DESC
-  `).all();
+  `);
   res.json({ success: true, items });
 });
 
-router.get('/admin/:userId', requireRole('admin'), (req, res) => {
-  const userId = Number(req.params.userId);
-  const items = db.prepare(SELECT_THREAD).all(userId);
-  db.prepare("UPDATE messages SET is_read = 1 WHERE user_id = ? AND sender_role = 'user' AND is_read = 0").run(userId);
+const userIdOf = (req) => (/^\d{1,9}$/.test(req.params.userId) ? Number(req.params.userId) : null);
+
+router.get('/admin/:userId', requireRole('admin'), async (req, res) => {
+  const userId = userIdOf(req);
+  if (!userId) return res.status(404).json({ success: false, message: 'Utilisateur introuvable.' });
+  const items = await db.all(SELECT_THREAD, [userId]);
+  await db.query("UPDATE messages SET is_read = 1 WHERE user_id = $1 AND sender_role = 'user' AND is_read = 0", [userId]);
   res.json({ success: true, items });
 });
 
-router.post('/admin/:userId', requireRole('admin'), sendLimiter, (req, res) => {
-  const userId = Number(req.params.userId);
-  if (!db.prepare('SELECT id FROM users WHERE id = ?').get(userId)) {
+router.post('/admin/:userId', requireRole('admin'), sendLimiter, async (req, res) => {
+  const userId = userIdOf(req);
+  if (!userId || !(await db.one('SELECT id FROM users WHERE id = $1', [userId]))) {
     return res.status(404).json({ success: false, message: 'Utilisateur introuvable.' });
   }
-  const msg = readMessage(req);
+  const msg = await readMessage(req);
   if (msg.error) return res.status(400).json({ success: false, message: msg.error });
-  insert.run(userId, 'admin', msg.kind, msg.text, msg.mediaUrl);
+  await db.query(INSERT, [userId, 'admin', msg.kind, msg.text, msg.mediaUrl]);
   res.status(201).json({ success: true });
 });
 
 // ----- Côté utilisateur -----
-router.get('/', requireAuth, (req, res) => {
-  const items = db.prepare(SELECT_THREAD).all(req.user.id);
-  db.prepare("UPDATE messages SET is_read = 1 WHERE user_id = ? AND sender_role = 'admin' AND is_read = 0").run(req.user.id);
+router.get('/', requireAuth, async (req, res) => {
+  const items = await db.all(SELECT_THREAD, [req.user.id]);
+  await db.query("UPDATE messages SET is_read = 1 WHERE user_id = $1 AND sender_role = 'admin' AND is_read = 0", [req.user.id]);
   res.json({ success: true, items });
 });
 
-router.post('/', requireAuth, sendLimiter, (req, res) => {
-  const msg = readMessage(req);
+router.post('/', requireAuth, sendLimiter, async (req, res) => {
+  const msg = await readMessage(req);
   if (msg.error) return res.status(400).json({ success: false, message: msg.error });
-  insert.run(req.user.id, 'user', msg.kind, msg.text, msg.mediaUrl);
+  await db.query(INSERT, [req.user.id, 'user', msg.kind, msg.text, msg.mediaUrl]);
   res.status(201).json({ success: true });
 });
 

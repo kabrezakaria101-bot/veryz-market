@@ -17,8 +17,13 @@
       <label>Ville</label><input name="city" required placeholder="Ouagadougou">
       <label>Quartier</label><input name="neighborhood" placeholder="Ex : Ouaga 2000">
       <label>Description</label><textarea name="description" maxlength="2000"></textarea>
-      <label>Photo</label><input name="photo" type="file" accept="image/*">
-      <img id="preview" class="preview hidden" alt="">
+
+      <label>Photos (jusqu&apos;à 6)</label>
+      <label for="photos" class="btn light photo-btn">📷 Ajouter des photos</label>
+      <input id="photos" name="photos" type="file" accept="image/*" multiple class="sr-only">
+      <p class="meta" id="photo-count">Aucune photo. La première sera la photo principale.</p>
+      <div id="previews" class="previews"></div>
+
       <p class="meta">Ton annonce sera vérifiée par un administrateur avant d&apos;apparaître sur le site.</p>
       <button class="btn orange" type="submit" style="width:100%">Publier</button>
     </form>

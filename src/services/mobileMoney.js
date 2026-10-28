@@ -15,32 +15,36 @@ function isSimulation() {
   return !config.isProduction || process.env.ALLOW_SIMULATION === 'true';
 }
 
-function createTransaction({ product, buyerId, provider, phone }) {
+async function createTransaction({ product, buyerId, provider, phone }) {
   const reference = 'VM-' + crypto.randomBytes(5).toString('hex').toUpperCase();
-  db.prepare(`
+  await db.query(`
     INSERT INTO transactions (reference, product_id, buyer_id, seller_id, amount_fcfa, provider, payer_phone, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
-  `).run(reference, product.id, buyerId, product.seller_id, product.price_fcfa, provider, phone);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending')
+  `, [reference, product.id, buyerId, product.seller_id, product.price_fcfa, provider, phone]);
   return reference;
 }
 
 // Valide le paiement et marque l'annonce comme vendue (une seule fois, tout ou rien)
-const confirmTransaction = db.transaction((reference, buyerId) => {
-  const tx = db.prepare('SELECT * FROM transactions WHERE reference = ? AND buyer_id = ?').get(reference, buyerId);
-  if (!tx || tx.status !== 'pending') return { ok: false, message: 'Transaction introuvable ou déjà traitée.' };
+function confirmTransaction(reference, buyerId) {
+  return db.transaction(async (client) => {
+    const { rows: [tx] } = await client.query(
+      'SELECT * FROM transactions WHERE reference = $1 AND buyer_id = $2 FOR UPDATE', [reference, buyerId]
+    );
+    if (!tx || tx.status !== 'pending') return { ok: false, message: 'Transaction introuvable ou déjà traitée.' };
 
-  if (Date.parse(tx.created_at) < Date.now() - PENDING_MINUTES * 60000) {
-    db.prepare("UPDATE transactions SET status = 'failed' WHERE id = ?").run(tx.id);
-    return { ok: false, message: 'Transaction expirée. Recommence le paiement.' };
-  }
+    if (new Date(tx.created_at).getTime() < Date.now() - PENDING_MINUTES * 60000) {
+      await client.query("UPDATE transactions SET status = 'failed' WHERE id = $1", [tx.id]);
+      return { ok: false, message: 'Transaction expirée. Recommence le paiement.' };
+    }
 
-  const sold = db.prepare("UPDATE products SET status = 'sold' WHERE id = ? AND status = 'published'").run(tx.product_id);
-  if (sold.changes === 0) {
-    db.prepare("UPDATE transactions SET status = 'failed' WHERE id = ?").run(tx.id);
-    return { ok: false, message: 'Cette annonce n\'est plus disponible.' };
-  }
-  db.prepare("UPDATE transactions SET status = 'paid', paid_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").run(tx.id);
-  return { ok: true };
-});
+    const sold = await client.query("UPDATE products SET status = 'sold' WHERE id = $1 AND status = 'published'", [tx.product_id]);
+    if (sold.rowCount === 0) {
+      await client.query("UPDATE transactions SET status = 'failed' WHERE id = $1", [tx.id]);
+      return { ok: false, message: 'Cette annonce n\'est plus disponible.' };
+    }
+    await client.query("UPDATE transactions SET status = 'paid', paid_at = now() WHERE id = $1", [tx.id]);
+    return { ok: true };
+  });
+}
 
 module.exports = { isSimulation, createTransaction, confirmTransaction };
