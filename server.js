@@ -62,13 +62,15 @@ app.use('/api/me', require('./src/routes/me'));
 app.use('/api/payments', require('./src/routes/payments'));
 app.use('/api/admin', require('./src/routes/admin'));
 app.use('/api/messages', require('./src/routes/messages'));
-
+app.use('/api/ads', require('./src/routes/ads'));
 app.use('/api', (req, res) => {
   res.status(404).json({ success: false, message: 'Route API introuvable.' });
 });
-
 app.use((err, req, res, next) => {
   console.error(err.message);
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ success: false, message: 'Photo trop lourde. Choisis une photo plus petite.' });
+  }
   res.status(500).json({ success: false, message: 'Une erreur interne est survenue.' });
 });
 
