@@ -32,8 +32,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Les annonces et messages peuvent contenir une photo ou un vocal : limite plus large pour ces routes
 app.use('/api/products', express.json({ limit: '12mb' }));
 app.use('/api/messages', express.json({ limit: '3mb' }));
-app.use(express.json({ limit: '100kb' }));
-app.use(express.urlencoded({ extended: false, limit: '100kb' }));
+app.use('/api/ads', express.json({ limit: '6mb' }));
+app.use(express.json({ limit: '200kb' }));
+app.use(express.urlencoded({ extended: false, limit: '200kb' }));
 
 app.use('/api/', rateLimit({
   windowMs: 15 * 60 * 1000,
