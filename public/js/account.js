@@ -136,5 +136,31 @@
       }
     });
   }
+  // Afficher un aperçu de la photo choisie
+  const photoInput = document.getElementById('profileImage');
+  const photoPreview = document.getElementById('profilePhoto');
+
+  if (photoInput && photoPreview) {
+    photoInput.addEventListener('change', () => {
+      const file = photoInput.files[0];
+
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        alert('Choisis un fichier image valide.');
+        photoInput.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        photoPreview.src = reader.result;
+      };
+
+      reader.readAsDataURL(file);
+    });
+  }
+
 })();
 
