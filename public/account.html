@@ -62,14 +62,20 @@
           </button>
         </form>
 
-        <form id="photoForm">
-          <label for="profileImage">Photo de profil</label>
-          <input id="profileImage" type="file"
-                 accept="image/*">
-          <button class="btn" type="submit">
-            Modifier ma photo
-          </button>
-        </form>
+        <form id="photoForm" enctype="multipart/form-data">
+  <label for="profileImage">Photo de profil</label>
+  <input
+    id="profileImage"
+    name="photo"
+    type="file"
+    accept="image/*"
+    required
+  >
+  <button class="btn" type="submit">
+    Modifier ma photo
+  </button>
+</form>
+
 
         <form id="passwordForm">
           <h3>Changer mon mot de passe</h3>
