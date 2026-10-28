@@ -11,7 +11,10 @@
     );
     if (VM.user) {
       nav.append(h('a', { href: '/account.html' }, 'Mon compte'));
-      if (VM.user.role === 'admin') nav.append(h('a', { href: '/admin.html' }, 'Admin'));
+      if (VM.user.role === 'admin') {
+        nav.append(h('a', { href: '/admin.html' }, 'Admin'));
+        nav.append(h('a', { href: '/admin-ads.html' }, 'Pubs'));
+      }
       nav.append(h('button', {
         type: 'button',
         onclick: async () => { await api('/api/auth/logout', { method: 'POST' }); location.href = '/'; }

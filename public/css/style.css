@@ -156,3 +156,19 @@ th { background: #eef3ef; }
 .rec-bar{display:none}
 .chat-form.recording > *:not(.rec-bar){display:none}
 .chat-form.recording .rec-bar{display:flex;flex:1;align-items:center;gap:12px}
+
+/* ===== Publicités (bandeau qui défile) ===== */
+.ads { position: relative; margin: 0 0 16px; border-radius: var(--radius); overflow: hidden; background: #e8ede9; }
+.ads-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.ads-track::-webkit-scrollbar { display: none; }
+.ads-slide { flex: 0 0 100%; scroll-snap-align: start; display: block; aspect-ratio: 16 / 7; }
+.ads-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ads-dots { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; justify-content: center; gap: 6px; }
+.ads-dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: rgba(255,255,255,.6); cursor: pointer; }
+.ads-dots button.on { background: var(--orange); width: 18px; border-radius: 6px; }
+.ad-preview img { width: 100%; border-radius: 10px; margin: 8px 0; }
+.ad-list { display: grid; gap: 10px; }
+.ad-row { display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); padding: 8px; flex-wrap: wrap; }
+.ad-row img { width: 120px; aspect-ratio: 16 / 7; object-fit: cover; border-radius: 8px; }
+.ad-info { flex: 1; min-width: 120px; word-break: break-all; }
+.ad-actions { display: flex; gap: 6px; }

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Publicités — VERYZ MARKET</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="app-header"></div>
+  <main><div class="container">
+    <h2>Publicités de l&apos;accueil</h2>
+    <p class="meta">Les photos défilent toutes seules en haut de la page d&apos;accueil, pour tous les clients. 10 maximum.</p>
+
+    <form id="ad-form" class="panel narrow">
+      <label>Photo de la publicité</label>
+      <label for="ad-photo" class="btn light photo-btn">📷 Choisir une photo</label>
+      <input id="ad-photo" type="file" accept="image/*" class="sr-only">
+      <div id="ad-preview" class="ad-preview"></div>
+      <label>Lien (facultatif)</label>
+      <input name="link_url" placeholder="https://… (où mène la pub si on clique)">
+      <button class="btn orange" type="submit" style="width:100%">Ajouter la publicité</button>
+    </form>
+
+    <h3>Publicités en ligne</h3>
+    <div id="ad-list" class="ad-list"></div>
+  </div></main>
+  <div id="app-footer"></div>
+  <script src="/js/ui.js"></script>
+  <script src="/js/layout.js"></script>
+  <script src="/js/admin-ads.js"></script>
+</body>
+</html>
