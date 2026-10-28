@@ -5,22 +5,115 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mon compte — VERYZ MARKET</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .profile-box {
+      max-width: 600px;
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+    }
+    .profile-box label {
+      display: block;
+      margin: 12px 0 6px;
+      font-weight: 600;
+    }
+    .profile-box input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .profile-photo {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 50%;
+      background: #eee;
+      display: block;
+      margin-bottom: 12px;
+    }
+    .profile-message {
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
   <div id="app-header"></div>
-  <main><div class="container">
-    <h2 id="hello">Mon compte</h2>
-    <div class="tabs">
-      <a class="btn orange" href="/sell.html">+ Nouvelle annonce</a>
+
+  <main>
+    <div class="container">
+      <h2 id="hello">Mon compte</h2>
+
+      <section class="profile-box">
+        <h2>Mon profil</h2>
+
+        <img id="profilePhoto" class="profile-photo"
+             src="/images/default-avatar.png" alt="Photo de profil">
+
+        <form id="profileForm">
+          <label for="profileName">Nom complet</label>
+          <input id="profileName" name="full_name"
+                 minlength="3" maxlength="80" required>
+
+          <button class="btn orange" type="submit">
+            Enregistrer mon nom
+          </button>
+        </form>
+
+        <form id="photoForm">
+          <label for="profileImage">Photo de profil</label>
+          <input id="profileImage" type="file"
+                 accept="image/*">
+          <button class="btn" type="submit">
+            Modifier ma photo
+          </button>
+        </form>
+
+        <form id="passwordForm">
+          <h3>Changer mon mot de passe</h3>
+
+          <label for="oldPassword">Ancien mot de passe</label>
+          <input id="oldPassword" type="password"
+                 autocomplete="current-password" required>
+
+          <label for="newPassword">Nouveau mot de passe</label>
+          <input id="newPassword" type="password"
+                 minlength="6" maxlength="100"
+                 autocomplete="new-password" required>
+
+          <label for="confirmPassword">Confirmer le nouveau mot de passe</label>
+          <input id="confirmPassword" type="password"
+                 minlength="6" maxlength="100"
+                 autocomplete="new-password" required>
+
+          <button class="btn orange" type="submit">
+            Changer mon mot de passe
+          </button>
+        </form>
+
+        <p id="profileMessage" class="profile-message"
+           role="status"></p>
+      </section>
+
+      <div class="tabs">
+        <a class="btn orange" href="/sell.html">+ Nouvelle annonce</a>
+      </div>
+
+      <h2>Mes annonces</h2>
+      <div id="mine"></div>
+
+      <h2>Mes transactions Mobile Money</h2>
+      <div id="tx"></div>
     </div>
-    <h2>Mes annonces</h2>
-    <div id="mine"></div>
-    <h2>Mes transactions Mobile Money</h2>
-    <div id="tx"></div>
-  </div></main>
+  </main>
+
   <div id="app-footer"></div>
+
   <script src="/js/ui.js"></script>
   <script src="/js/layout.js"></script>
   <script src="/js/account.js"></script>
 </body>
 </html>
+

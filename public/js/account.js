@@ -36,5 +36,105 @@
       h('td', {}, date(t.created_at)), h('td', {}, t.kind), h('td', {}, h('a', { href: '/product.html?id=' + t.product_id }, t.title)),
       h('td', {}, fcfa(t.amount_fcfa)), h('td', {}, t.provider), h('td', {}, badge(t.status)), h('td', {}, t.reference)))))
     : h('p', { class: 'empty' }, 'Aucune transaction.'));
+  // Charger les annonces existantes
   loadMine();
+
+  // Modifier le nom du compte
+  const profileForm = document.getElementById('profileForm');
+  const profileName = document.getElementById('profileName');
+  const profileMessage = document.getElementById('profileMessage');
+
+  if (profileForm && profileName) {
+    profileName.value = VM.user.full_name || '';
+
+    profileForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const full_name = profileName.value.trim();
+
+      if (full_name.length < 3 || full_name.length > 80) {
+        if (profileMessage) {
+          profileMessage.textContent =
+            'Le nom doit contenir entre 3 et 80 caractères.';
+        }
+        return;
+      }
+
+      try {
+        const result = await api('/api/me/profile', {
+          method: 'PATCH',
+          body: { full_name }
+        });
+
+        VM.user.full_name = result.user?.full_name || full_name;
+
+        document.getElementById('hello').textContent =
+          'Bonjour ' + VM.user.full_name;
+
+        if (profileMessage) {
+          profileMessage.textContent = 'Nom modifié avec succès.';
+        }
+      } catch (error) {
+        if (profileMessage) {
+          profileMessage.textContent =
+            error.message || 'Impossible de modifier le nom.';
+        }
+      }
+    });
+  }
+
+  // Modifier le mot de passe
+  const passwordForm = document.getElementById('passwordForm');
+
+  if (passwordForm) {
+    passwordForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+
+      const oldPassword =
+        document.getElementById('oldPassword').value;
+      const newPassword =
+        document.getElementById('newPassword').value;
+      const confirmPassword =
+        document.getElementById('confirmPassword').value;
+
+      if (newPassword.length < 6 || newPassword.length > 100) {
+        if (profileMessage) {
+          profileMessage.textContent =
+            'Le nouveau mot de passe doit contenir entre 6 et 100 caractères.';
+        }
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        if (profileMessage) {
+          profileMessage.textContent =
+            'Les deux nouveaux mots de passe ne correspondent pas.';
+        }
+        return;
+      }
+
+      try {
+        await api('/api/me/password', {
+          method: 'PATCH',
+          body: {
+            old_password: oldPassword,
+            new_password: newPassword
+          }
+        });
+
+        passwordForm.reset();
+
+        if (profileMessage) {
+          profileMessage.textContent =
+            'Mot de passe modifié avec succès.';
+        }
+      } catch (error) {
+        if (profileMessage) {
+          profileMessage.textContent =
+            error.message || 'Impossible de modifier le mot de passe.';
+        }
+      }
+    });
+  }
 })();
+
