@@ -150,3 +150,9 @@ th { background: #eef3ef; }
 .thumbs { display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; }
 .thumbs img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; border: 2px solid transparent; cursor: pointer; flex: none; }
 .thumbs img.on { border-color: var(--orange); }
+.chat-form{display:flex;align-items:flex-end;gap:8px;flex-wrap:nowrap;width:100%}
+.chat-form textarea{flex:1 1 auto;min-width:0;width:auto;min-height:44px;max-height:140px;overflow-y:auto;resize:none;line-height:1.4;padding:10px 14px;border-radius:22px;box-sizing:border-box}
+.chat-form .icon-btn,.chat-form .btn{flex:0 0 auto}
+.rec-bar{display:none}
+.chat-form.recording > *:not(.rec-bar){display:none}
+.chat-form.recording .rec-bar{display:flex;flex:1;align-items:center;gap:12px}

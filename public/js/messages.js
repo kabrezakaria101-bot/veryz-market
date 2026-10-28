@@ -87,11 +87,17 @@
     const text = input.value.trim();
     if (!text) return;
     sendBtn.disabled = true;
-    if (await post({ kind: 'text', body: text })) input.value = '';
+    if (await post({ kind: 'text', body: text })) input.value = '';autoGrow();
     sendBtn.disabled = false;
   });
 
   // Entrée = envoyer, Maj+Entrée = nouvelle ligne
+  function autoGrow() {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+}
+input.addEventListener('input', autoGrow);
+
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
   });
@@ -135,7 +141,15 @@
       toast('Vocal indisponible : ouvre le site en https ou sur localhost.', true); return;
     }
     try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-    catch (e) { toast('Micro refusé ou indisponible.', true); return; }
+    catch (e) {
+  toast(e.name === 'NotAllowedError'
+    ? 'Micro bloqué : autorise le micro pour ce site (cadenas à côté de l\'adresse).'
+    : e.name === 'NotFoundError'
+    ? 'Aucun micro trouvé.'
+    : 'Micro indisponible (' + e.name + ').', true);
+  return;
+}
+
 
     const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus']
       .find((t) => MediaRecorder.isTypeSupported(t));
@@ -179,4 +193,5 @@
   if (isAdmin) await loadThreads();
   loadChat(true);
   setInterval(() => { if (isAdmin) loadThreads(); loadChat(false); }, 10000);
-})();
+})
+();
