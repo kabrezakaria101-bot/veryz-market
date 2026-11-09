@@ -10,7 +10,8 @@ const MAX_IMAGES = 6; // photos maximum par annonce
 
 const SELECT = `
   SELECT p.id, p.title, p.description, p.price_fcfa, p.city, p.neighborhood, p.image_url,
-         p.status, p.created_at, p.category_id,
+         p.status, p.created_at, p.category_id, p.views,
+         (SELECT COUNT(*)::int FROM product_likes l WHERE l.product_id = p.id) AS likes,
          c.name AS category_name, c.slug AS category_slug,
          u.id AS seller_id, u.full_name AS seller_name, u.phone AS seller_phone
   FROM products p
@@ -68,6 +69,12 @@ router.get('/', async (req, res) => {
     params
   );
   items.forEach((i) => delete i.seller_phone);
+  const likedSet = new Set();
+  if (req.user && items.length) {
+    const mine = await db.all('SELECT product_id FROM product_likes WHERE user_id = $1 AND product_id = ANY($2::int[])', [req.user.id, items.map((i) => i.id)]);
+    mine.forEach((r) => likedSet.add(r.product_id));
+  }
+  items.forEach((i) => { i.liked = likedSet.has(i.id); });
   res.json({ success: true, items, total, page, pages: Math.max(1, Math.ceil(total / config.pageSize)) });
 });
 
@@ -80,6 +87,7 @@ router.get('/:id', async (req, res) => {
   const photos = await db.all('SELECT url FROM product_images WHERE product_id = $1 ORDER BY position, id', [row.id]);
   row.images = photos.map((x) => x.url);
   if (!row.images.length && row.image_url) row.images = [row.image_url];
+  row.liked = !!(req.user && await db.one('SELECT 1 FROM product_likes WHERE user_id = $1 AND product_id = $2', [req.user.id, row.id]));
   res.json({ success: true, product: row });
 });
 
@@ -140,6 +148,31 @@ router.delete('/:id', requireAuth, async (req, res) => {
   await db.query('DELETE FROM products WHERE id = $1', [row.id]); // supprime aussi ses lignes de photos
   new Set([row.image_url, ...photos.map((x) => x.url)].filter(Boolean)).forEach((u) => deleteImage(u));
   res.json({ success: true });
+});
+// J'aime / je n'aime plus (il faut être connecté)
+router.post('/:id/like', requireAuth, async (req, res) => {
+  const id = parseId(req.params.id);
+  const p = id ? await db.one("SELECT id FROM products WHERE id = $1 AND status IN ('published', 'sold')", [id]) : null;
+  if (!p) return res.status(404).json({ success: false, message: 'Annonce introuvable.' });
+  const removed = await db.one('DELETE FROM product_likes WHERE user_id = $1 AND product_id = $2 RETURNING 1 AS ok', [req.user.id, id]);
+  if (!removed) await db.query('INSERT INTO product_likes (user_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [req.user.id, id]);
+  const { n } = await db.one('SELECT COUNT(*)::int AS n FROM product_likes WHERE product_id = $1', [id]);
+  res.json({ success: true, liked: !removed, likes: n });
+});
+
+// Compter une vue : une seule par visiteur, et pas celles du vendeur lui-même
+router.post('/:id/view', async (req, res) => {
+  const id = parseId(req.params.id);
+  const p = id ? await db.one("SELECT id, seller_id, views FROM products WHERE id = $1 AND status IN ('published', 'sold')", [id]) : null;
+  if (!p) return res.status(404).json({ success: false, message: 'Annonce introuvable.' });
+  if (req.user && req.user.id === p.seller_id) return res.json({ success: true, views: p.views });
+  const viewer = req.user
+    ? 'u' + req.user.id
+    : 'a' + require('crypto').createHash('sha256').update(req.ip + '|' + (req.get('user-agent') || '')).digest('hex').slice(0, 32);
+  const fresh = await db.one('INSERT INTO product_views (product_id, viewer) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING 1 AS ok', [id, viewer]);
+  let views = p.views;
+  if (fresh) views = (await db.one('UPDATE products SET views = views + 1 WHERE id = $1 RETURNING views', [id])).views;
+  res.json({ success: true, views });
 });
 
 module.exports = router;

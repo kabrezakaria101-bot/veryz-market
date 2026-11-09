@@ -8,6 +8,12 @@
   try { p = (await api('/api/products/' + encodeURIComponent(id))).product; }
   catch (e) { root.replaceChildren(h('p', { class: 'empty' }, e.message)); return; }
   document.title = p.title + ' — VERYZ MARKET';
+    // Nombre de vues : on compte cette visite puis on met le chiffre à jour
+  const viewsEl = h('span', { class: 'views' }, '👁 ' + (p.views || 0) + ' vues');
+  api('/api/products/' + p.id + '/view', { method: 'POST' })
+    .then((r) => { viewsEl.textContent = '👁 ' + r.views + ' vues'; })
+    .catch(() => { /* pas grave si le comptage échoue */ });
+
 
   const isOwner = VM.user && VM.user.id === p.seller_id;
   const wa = 'https://wa.me/226' + p.seller_phone + '?text=' + encodeURIComponent(`Bonjour, je suis intéressé par « ${p.title} » sur VERYZ MARKET.`);
@@ -117,6 +123,7 @@
       ),
       h('h1', { style: 'margin:6px 0' }, p.title),
       h('div', { class: 'price', style: 'font-size:1.6rem' }, fcfa(p.price_fcfa)),
+      h('div', { class: 'stats', style: 'justify-content:flex-start;gap:14px;margin:10px 0' }, VM.likeButton(p), viewsEl),
       h('p', { class: 'meta' },
         'Lieu : ',
         [p.city, p.neighborhood].filter(Boolean).join(' · '),

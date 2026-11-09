@@ -51,13 +51,41 @@ VM.image = (url, alt) => url
   ? VM.h('img', { class: 'pic', src: url, alt: alt || '', loading: 'lazy' })
   : VM.h('div', { class: 'noimg' }, 'Pas de photo');
 
+  // Bouton ❤️ (sert sur les cartes et sur la page d'un produit)
+VM.likeButton = function (p) {
+  let liked = !!p.liked;
+  let likes = p.likes || 0;
+  const btn = VM.h('button', { class: 'like-btn', type: 'button', title: "J'aime" });
+  const draw = () => {
+    btn.classList.toggle('liked', liked);
+    btn.textContent = (liked ? '❤️' : '🤍') + ' ' + likes;
+  };
+  draw();
+  btn.addEventListener('click', async (e) => {
+    e.preventDefault();   // la carte est un lien : on évite d'ouvrir le produit
+    e.stopPropagation();
+    try {
+      const r = await VM.api('/api/products/' + p.id + '/like', { method: 'POST' });
+      liked = r.liked; likes = r.likes; draw();
+    } catch (err) {
+      if (err.status === 401) {
+        VM.toast('Connecte-toi pour aimer ce produit.', true);
+        setTimeout(() => { location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.search); }, 1200);
+      } else VM.toast(err.message, true);
+    }
+  });
+  return btn;
+};
+
 VM.card = (p) => VM.h('a', { class: 'card', href: '/product.html?id=' + p.id },
   VM.image(p.image_url, p.title),
   VM.h('div', { class: 'body' },
     VM.h('h3', {}, p.title),
     VM.h('div', { class: 'price' }, VM.fcfa(p.price_fcfa)),
     VM.h('div', { class: 'meta' }, [p.city, p.neighborhood].filter(Boolean).join(' · ')),
-    VM.h('div', { class: 'meta' }, p.category_name || '')
+    VM.h('div', { class: 'meta' }, p.category_name || ''),
+    VM.h('div', { class: 'stats' }, VM.likeButton(p), VM.h('span', { class: 'views' }, '👁 ' + (p.views || 0)))
+
   )
 );
 
