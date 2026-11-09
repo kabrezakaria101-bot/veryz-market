@@ -113,6 +113,24 @@ CREATE INDEX IF NOT EXISTS idx_product_images_product ON product_images(product_
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_messages_user ON messages(user_id);
+
+  ALTER TABLE products ADD COLUMN IF NOT EXISTS views INTEGER NOT NULL DEFAULT 0;
+
+  CREATE TABLE IF NOT EXISTS product_likes (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (user_id, product_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_product_likes_product ON product_likes(product_id);
+
+  CREATE TABLE IF NOT EXISTS product_views (
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    viewer TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (product_id, viewer)
+  );
+
 `;
 
 const CATEGORIES = [
