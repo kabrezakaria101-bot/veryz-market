@@ -62,6 +62,7 @@ app.use('/api/me', require('./src/routes/me'));
 app.use('/api/payments', require('./src/routes/payments'));
 app.use('/api/admin', require('./src/routes/admin'));
 app.use('/api/messages', require('./src/routes/messages'));
+app.use('/api/notifications', require('./src/routes/notifications'))
 app.use('/api/ads', require('./src/routes/ads'));
 app.use('/api', (req, res) => {
   res.status(404).json({ success: false, message: 'Route API introuvable.' });

@@ -3,6 +3,7 @@ const db = require('../db');
 const config = require('../config');
 const { requireAuth } = require('../middleware/auth');
 const { saveImage, deleteImage } = require('../services/images');
+const { notify, notifyAdmin } = require('../services/notify');
 
 const router = express.Router();
 
@@ -118,6 +119,12 @@ router.post('/', requireAuth, async (req, res) => {
     await db.query('INSERT INTO product_images (product_id, url, position) VALUES ($1, $2, $3)', [created.id, urls[i], i]);
   }
   await db.query("UPDATE users SET role = 'seller' WHERE id = $1 AND role = 'buyer'", [req.user.id]);
+  const link = '/product.html?id=' + created.id;
+  if (status === 'published') {
+    await notify({ type: 'new_product', body: `Nouvelle annonce : « ${value.title} »`, link, actorId: req.user.id });
+  } else {
+    await notifyAdmins({ type: 'pending', body: `Nouvelle annonce à valider : « ${value.title} »`, link: '/admin.html', actorId: req.user.id });
+  }
   res.status(201).json({ success: true, id: created.id, status });
 });
 
@@ -152,10 +159,18 @@ router.delete('/:id', requireAuth, async (req, res) => {
 // J'aime / je n'aime plus (il faut être connecté)
 router.post('/:id/like', requireAuth, async (req, res) => {
   const id = parseId(req.params.id);
-  const p = id ? await db.one("SELECT id FROM products WHERE id = $1 AND status IN ('published', 'sold')", [id]) : null;
+  const p = id ? await db.one("SELECT id, seller_id, title FROM products WHERE id = $1 AND status IN ('published', 'sold')", [id]) : null;
+
   if (!p) return res.status(404).json({ success: false, message: 'Annonce introuvable.' });
   const removed = await db.one('DELETE FROM product_likes WHERE user_id = $1 AND product_id = $2 RETURNING 1 AS ok', [req.user.id, id]);
-  if (!removed) await db.query('INSERT INTO product_likes (user_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [req.user.id, id]);
+  if (!removed) {
+    await db.query('INSERT INTO product_likes (user_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [req.user.id, id]);
+    if (p.seller_id !== req.user.id) {
+      const link = '/product.html?id=' + id;
+      const already = await db.one("SELECT 1 AS ok FROM notifications WHERE user_id = $1 AND actor_id = $2 AND type = 'like' AND link = $3", [p.seller_id, req.user.id, link]);
+      if (!already) await notify({ userId: p.seller_id, type: 'like', body: `${req.user.full_name || 'Quelqu\'un'} a aimé « ${p.title} »`, link, actorId: req.user.id });
+    }
+  }
   const { n } = await db.one('SELECT COUNT(*)::int AS n FROM product_likes WHERE product_id = $1', [id]);
   res.json({ success: true, liked: !removed, likes: n });
 });

@@ -130,6 +130,18 @@ CREATE INDEX IF NOT EXISTS idx_product_images_product ON product_images(product_
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     PRIMARY KEY (product_id, viewer)
   );
+CREATE TABLE IF NOT EXISTS notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,
+    body TEXT NOT NULL,
+    link TEXT,
+    actor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    is_read INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
+  ALTER TABLE users ADD COLUMN IF NOT EXISTS notifs_seen_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 `;
 
