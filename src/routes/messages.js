@@ -3,7 +3,7 @@ const { rateLimit } = require('express-rate-limit');
 const db = require('../db');
 const { requireAuth, requireRole } = require('../middleware/auth');
 const { saveImage, saveAudio } = require('../services/images');
-
+const { notify, notifyAdmins } = require('../services/notify');
 const router = express.Router();
 
 // Stickers autorisés (la même liste est dans public/js/messages.js)
@@ -76,6 +76,7 @@ router.get('/admin/:userId', requireRole('admin'), async (req, res) => {
   if (!userId) return res.status(404).json({ success: false, message: 'Utilisateur introuvable.' });
   const items = await db.all(SELECT_THREAD, [userId]);
   await db.query("UPDATE messages SET is_read = 1 WHERE user_id = $1 AND sender_role = 'user' AND is_read = 0", [userId]);
+  await db.query("UPDATE notifications SET is_read = 1 WHERE user_id = $1 AND type = 'message' AND actor_id = $2", [req.user.id, userId]);
   res.json({ success: true, items });
 });
 
@@ -87,6 +88,8 @@ router.post('/admin/:userId', requireRole('admin'), sendLimiter, async (req, res
   const msg = await readMessage(req);
   if (msg.error) return res.status(400).json({ success: false, message: msg.error });
   await db.query(INSERT, [userId, 'admin', msg.kind, msg.text, msg.mediaUrl]);
+  await notify({ userId, type: 'message', body: "L'administrateur t'a répondu", link: '/messages.html', once: true });
+
   res.status(201).json({ success: true });
 });
 
@@ -94,6 +97,8 @@ router.post('/admin/:userId', requireRole('admin'), sendLimiter, async (req, res
 router.get('/', requireAuth, async (req, res) => {
   const items = await db.all(SELECT_THREAD, [req.user.id]);
   await db.query("UPDATE messages SET is_read = 1 WHERE user_id = $1 AND sender_role = 'admin' AND is_read = 0", [req.user.id]);
+   await db.query("UPDATE notifications SET is_read = 1 WHERE user_id = $1 AND type = 'message'", [req.user.id]);
+
   res.json({ success: true, items });
 });
 
@@ -101,6 +106,8 @@ router.post('/', requireAuth, sendLimiter, async (req, res) => {
   const msg = await readMessage(req);
   if (msg.error) return res.status(400).json({ success: false, message: msg.error });
   await db.query(INSERT, [req.user.id, 'user', msg.kind, msg.text, msg.mediaUrl]);
+    await notifyAdmins({ type: 'message', body: `${req.user.full_name || 'Un utilisateur'} t'a écrit`, link: '/messages.html', actorId: req.user.id, once: true });
+
   res.status(201).json({ success: true });
 });
 

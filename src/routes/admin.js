@@ -1,7 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const { requireRole } = require('../middleware/auth');
-
+const { notify } =require('../services/notify')
 const router = express.Router();
 router.use(requireRole('admin'));
 
@@ -27,13 +27,25 @@ router.get('/products', async (req, res) => {
   `, [status]);
   res.json({ success: true, items });
 });
-
 router.post('/products/:id/status', async (req, res) => {
   const status = (req.body || {}).status;
   if (!['published', 'rejected', 'pending'].includes(status)) return res.status(400).json({ success: false, message: 'Statut invalide.' });
   const id = /^\d{1,9}$/.test(req.params.id) ? Number(req.params.id) : null;
-  const done = id ? await db.query('UPDATE products SET status = $1 WHERE id = $2', [status, id]) : { rowCount: 0 };
-  if (!done.rowCount) return res.status(404).json({ success: false, message: 'Annonce introuvable.' });
+  const before = id ? await db.one('SELECT id, title, seller_id, status FROM products WHERE id = $1', [id]) : null;
+  if (!before) return res.status(404).json({ success: false, message: 'Annonce introuvable.' });
+
+  await db.query('UPDATE products SET status = $1 WHERE id = $2', [status, id]);
+
+  // On ne prévient que si le statut a vraiment changé
+  if (before.status !== status) {
+    const link = '/product.html?id=' + id;
+    if (status === 'published') {
+      await notify({ userId: before.seller_id, type: 'approved', body: `Ton annonce « ${before.title} » est publiée !`, link });
+      await notify({ type: 'new_product', body: `Nouvelle annonce : « ${before.title} »`, link, actorId: before.seller_id });
+    } else if (status === 'rejected') {
+      await notify({ userId: before.seller_id, type: 'rejected', body: `Ton annonce « ${before.title} » a été refusée.`, link: '/account.html' });
+    }
+  }
   res.json({ success: true });
 });
 

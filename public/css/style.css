@@ -221,3 +221,12 @@ th { background: #eef3ef; }
 .like-btn{border:1px solid #dfe5e1;background:#fff;border-radius:999px;padding:4px 12px;font-size:15px;line-height:1.2;cursor:pointer}
 .like-btn.liked{border-color:#e53935;color:#e53935}
 .views{color:#6b7a72;font-size:14px}
+
+.bell{position:relative;display:inline-block}
+.bell-btn{position:relative;background:none;border:0;font-size:1.3rem;cursor:pointer;color:#fff;padding:4px 8px}
+.bell-badge{position:absolute;top:-4px;right:-2px;background:#e53935;color:#fff;border-radius:999px;font-size:11px;font-weight:700;min-width:18px;height:18px;line-height:18px;text-align:center;padding:0 4px}
+.bell-badge.hidden,.bell-list.hidden{display:none}
+.bell-list{position:fixed;left:12px;right:12px;top:70px;max-width:420px;margin:0 auto;max-height:65vh;overflow-y:auto;background:#fff;color:#1d2b24;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:100;padding:6px}
+.bell-item{display:block;padding:10px 12px;border-radius:8px;color:#1d2b24;text-decoration:none;font-size:15px}
+.bell-item small{display:block;color:#6b7a72;margin-top:2px}
+.bell-item.new{background:#fff4e5;font-weight:600}

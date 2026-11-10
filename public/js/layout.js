@@ -15,6 +15,35 @@
         nav.append(h('a', { href: '/admin.html' }, 'Admin'));
         nav.append(h('a', { href: '/admin-ads.html' }, 'Pubs'));
       }
+      // 🔔 Notifications
+      const bellBadge = h('span', { class: 'bell-badge hidden' }, '0');
+      const bellList = h('div', { class: 'bell-list hidden' });
+      const bell = h('div', { class: 'bell' },
+        h('button', { type: 'button', class: 'bell-btn', title: 'Notifications', onclick: toggleBell }, '🔔', bellBadge),
+        bellList);
+      async function toggleBell(e) {
+        e.stopPropagation();
+        if (!bellList.classList.contains('hidden')) { bellList.classList.add('hidden'); return; }
+        try {
+          const { items } = await api('/api/notifications');
+          bellList.replaceChildren(...(items.length
+            ? items.map((n) => h('a', { class: 'bell-item' + (n.seen ? '' : ' new'), href: n.link || '#' },
+                h('span', {}, n.body), h('small', {}, VM.date(n.created_at))))
+            : [h('p', { class: 'empty' }, 'Aucune notification.')]));
+          bellList.classList.remove('hidden');
+          await api('/api/notifications/read', { method: 'POST' });
+          bellBadge.classList.add('hidden');
+        } catch (err) { /* on réessaiera */ }
+      }
+      document.addEventListener('click', () => bellList.classList.add('hidden'));
+      const refreshBell = () => api('/api/notifications/count').then((r) => {
+        bellBadge.textContent = r.unread > 99 ? '99+' : String(r.unread);
+        bellBadge.classList.toggle('hidden', !r.unread);
+      }).catch(() => {});
+      refreshBell();
+      setInterval(refreshBell, 30000);
+      nav.append(bell);
+
       nav.append(h('button', {
         type: 'button',
         onclick: async () => { await api('/api/auth/logout', { method: 'POST' }); location.href = '/'; }
