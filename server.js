@@ -31,6 +31,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Les annonces et messages peuvent contenir une photo ou un vocal : limite plus large pour ces routes
 app.use('/api/products', express.json({ limit: '12mb' }));
+app.use('/api/pronostics', express.json({ limit: '12mb' }));
 app.use('/api/messages', express.json({ limit: '3mb' }));
 app.use('/api/ads', express.json({ limit: '6mb' }));
 app.use(express.json({ limit: '200kb' }));
@@ -63,6 +64,7 @@ app.use('/api/payments', require('./src/routes/payments'));
 app.use('/api/admin', require('./src/routes/admin'));
 app.use('/api/messages', require('./src/routes/messages'));
 app.use('/api/notifications', require('./src/routes/notifications'))
+app.use('/api/pronostics', require('./src/routes/pronostics'))
 app.use('/api/ads', require('./src/routes/ads'));
 app.use('/api', (req, res) => {
   res.status(404).json({ success: false, message: 'Route API introuvable.' });

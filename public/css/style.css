@@ -230,3 +230,11 @@ th { background: #eef3ef; }
 .bell-item{display:block;padding:10px 12px;border-radius:8px;color:#1d2b24;text-decoration:none;font-size:15px}
 .bell-item small{display:block;color:#6b7a72;margin-top:2px}
 .bell-item.new{background:#fff4e5;font-weight:600}
+.pronos{display:grid;gap:16px;margin-top:12px}
+.prono{background:#fff;border-radius:14px;padding:12px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.prono h3{margin:0 0 8px}
+.prono-img{width:100%;height:auto;border-radius:10px;display:block}
+.prono-note{white-space:pre-wrap;margin:8px 0}
+.prono-form{background:#fff;border-radius:14px;padding:12px;margin:12px 0;display:grid;gap:10px}
+.prono-form input[type=text],.prono-form textarea{width:100%;box-sizing:border-box}
+.prono-preview{max-width:100%;border-radius:10px}

@@ -143,6 +143,16 @@ CREATE TABLE IF NOT EXISTS notifications (
   CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
   ALTER TABLE users ADD COLUMN IF NOT EXISTS notifs_seen_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
+  CREATE TABLE IF NOT EXISTS pronostics (
+    id SERIAL PRIMARY KEY,
+    author_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    title TEXT NOT NULL DEFAULT '',
+    note TEXT NOT NULL DEFAULT '',
+    image_url TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  );
+  CREATE INDEX IF NOT EXISTS idx_pronostics_created ON pronostics(created_at DESC);
+
 `;
 
 const CATEGORIES = [

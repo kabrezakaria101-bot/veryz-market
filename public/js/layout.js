@@ -7,6 +7,7 @@
   VM.ready.then(() => {
     const nav = h('nav', { class: 'nav' },
       h('a', { href: '/' }, 'Accueil'),
+      h('a', { href: '/pronostic.html' }, '⚽ Pronostic'),
       h('a', { href: '/sell.html', class: 'cta' }, '+ Vendre')
     );
     if (VM.user) {
