@@ -152,6 +152,7 @@ CREATE TABLE IF NOT EXISTS notifications (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   );
   CREATE INDEX IF NOT EXISTS idx_pronostics_created ON pronostics(created_at DESC);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pronos_seen_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 `;
 

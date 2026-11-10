@@ -2,7 +2,7 @@ const express = require('express');
 const db = require('../db');
 const { requireRole } = require('../middleware/auth');
 const { saveImage, deleteImage } = require('../services/images');
-const { notify } = require('../services/notify');
+
 
 const router = express.Router();
 const PAGE_SIZE = 20;
@@ -15,9 +15,27 @@ router.get('/', async (req, res) => {
     'SELECT id, title, note, image_url, created_at FROM pronostics ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2',
     [PAGE_SIZE, (page - 1) * PAGE_SIZE]
   );
+    let seenAt = null;
+  if (req.user) seenAt = (await db.one('SELECT pronos_seen_at FROM users WHERE id = $1', [req.user.id])).pronos_seen_at;
+  items.forEach((i) => { i.is_new = !!(seenAt && new Date(i.created_at) > new Date(seenAt)); });
+
   res.json({ success: true, items, total, page, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) });
 });
+// Combien de nouveaux pronostics depuis ma dernière visite (pastille du menu)
+router.get('/new', async (req, res) => {
+  if (!req.user) return res.json({ success: true, count: 0 });
+  const r = await db.one(
+    'SELECT COUNT(*)::int AS n FROM pronostics p, users u WHERE u.id = $1 AND p.created_at > u.pronos_seen_at',
+    [req.user.id]
+  );
+  res.json({ success: true, count: r.n });
+});
 
+// J'ai ouvert la page : la pastille repart à zéro
+router.post('/seen', async (req, res) => {
+  if (req.user) await db.query('UPDATE users SET pronos_seen_at = now() WHERE id = $1', [req.user.id]);
+  res.json({ success: true });
+});
 // Publier (admin seulement)
 router.post('/', requireRole('admin'), async (req, res) => {
   const body = req.body || {};
@@ -31,12 +49,7 @@ router.post('/', requireRole('admin'), async (req, res) => {
     'INSERT INTO pronostics (author_id, title, note, image_url) VALUES ($1, $2, $3, $4) RETURNING id',
     [req.user.id, title, note, url]
   );
-  await notify({
-    type: 'pronostic',
-    body: title ? `Nouveau pronostic : ${title}` : 'Nouveau pronostic disponible',
-    link: '/pronostic.html',
-    actorId: req.user.id
-  });
+    await db.query('UPDATE users SET pronos_seen_at = now() WHERE id = $1', [req.user.id]);
   res.status(201).json({ success: true, id: row.id });
 });
 

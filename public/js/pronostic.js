@@ -28,7 +28,7 @@
   function post(p) {
     const when = new Date(p.created_at).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     return h('article', { class: 'prono' },
-      p.title ? h('h3', {}, p.title) : null,
+      (p.title || p.is_new) ? h('h3', {}, p.title || 'Pronostic', p.is_new ? h('span', { class: 'new-tag' }, 'NOUVEAU') : null) : null,
       h('a', { href: p.image_url, target: '_blank', rel: 'noopener' },
         h('img', { class: 'prono-img', src: p.image_url, alt: p.title || 'Pronostic', loading: 'lazy' })),
       p.note ? h('p', { class: 'prono-note' }, p.note) : null,
@@ -93,6 +93,10 @@
         );
       }
     } catch (e) { feed.replaceChildren(h('p', { class: 'empty' }, e.message)); }
+    // La page est ouverte : la pastille du menu repart à zéro
+    await api('/api/pronostics/seen', { method: 'POST' }).catch(() => {});
+    if (VM.refreshPronoBadge) VM.refreshPronoBadge();
+
   }
 
   const warning = h('p', { class: 'meta' }, '⚠️ Les pronostics ne garantissent aucun gain. Joue avec modération (18 ans et plus).');

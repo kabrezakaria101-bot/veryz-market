@@ -238,3 +238,6 @@ th { background: #eef3ef; }
 .prono-form{background:#fff;border-radius:14px;padding:12px;margin:12px 0;display:grid;gap:10px}
 .prono-form input[type=text],.prono-form textarea{width:100%;box-sizing:border-box}
 .prono-preview{max-width:100%;border-radius:10px}
+.nav-badge{display:inline-block;background:#e53935;color:#fff;border-radius:999px;font-size:12px;font-weight:700;min-width:20px;height:20px;line-height:20px;text-align:center;padding:0 6px;margin-left:4px}
+.nav-badge.hidden{display:none}
+.new-tag{background:#e53935;color:#fff;border-radius:999px;font-size:11px;font-weight:700;padding:2px 8px;margin-left:8px;vertical-align:middle}

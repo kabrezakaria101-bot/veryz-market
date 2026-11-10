@@ -5,9 +5,10 @@
   VM.ready = api('/api/auth/me').then((r) => (VM.user = r.user)).catch(() => (VM.user = null));
 
   VM.ready.then(() => {
+   const pronoBadge = h('span', { class: 'nav-badge hidden' }, '0');
     const nav = h('nav', { class: 'nav' },
       h('a', { href: '/' }, 'Accueil'),
-      h('a', { href: '/pronostic.html' }, '⚽ Pronostic'),
+      h('a', { href: '/pronostic.html' }, '⚽ Pronostic',pronoBadge),
       h('a', { href: '/sell.html', class: 'cta' }, '+ Vendre')
     );
     if (VM.user) {
@@ -52,6 +53,16 @@
     } else {
       nav.append(h('a', { href: '/login.html?next=' + encodeURIComponent(location.pathname + location.search) }, 'Connexion'));
     }
+    VM.refreshPronoBadge = () => {
+      if (!VM.user) return Promise.resolve();
+      return api('/api/pronostics/new').then((r) => {
+        pronoBadge.textContent = r.count > 99 ? '99+' : String(r.count);
+        pronoBadge.classList.toggle('hidden', !r.count);
+      }).catch(() => {});
+    };
+    VM.refreshPronoBadge();
+    setInterval(VM.refreshPronoBadge, 30000);
+
     const header = document.getElementById('app-header');
     header.className = 'header';
     header.append(h('div', { class: 'container' },
